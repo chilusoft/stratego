@@ -134,17 +134,17 @@ jobs:
         run: |
           printf '%s' "$KEY_CONTENT" > /tmp/auth_key.p8
           python3 -c "
-import json, os
-with open('/tmp/auth_key.p8') as f:
-    key = f.read()
-api_key = {
-    'key_id': os.environ['KEY_ID'],
-    'issuer_id': os.environ['ISSUER_ID'],
-    'key': key
-}
-with open('/tmp/api_key.json', 'w') as f:
-    json.dump(api_key, f)
-"
+          import json, os
+          with open('/tmp/auth_key.p8') as f:
+              key = f.read()
+          api_key = {
+              'key_id': os.environ['KEY_ID'],
+              'issuer_id': os.environ['ISSUER_ID'],
+              'key': key
+          }
+          with open('/tmp/api_key.json', 'w') as f:
+              json.dump(api_key, f)
+          "
           fastlane match appstore --api_key_path /tmp/api_key.json
 
       - name: Build signed IPA
@@ -158,15 +158,15 @@ with open('/tmp/api_key.json', 'w') as f:
         run: |
           printf '%s' "$KEY_CONTENT" > /tmp/auth_key.p8
           python3 -c "
-import json, os
-with open('/tmp/auth_key.p8') as f:
-    key = f.read()
-api_key = {
-    'key_id': os.environ['KEY_ID'],
-    'issuer_id': os.environ['ISSUER_ID'],
-    'key': key
-}
-with open('/tmp/api_key.json', 'w') as f:
-    json.dump(api_key, f)
-"
+          import json, os
+          with open('/tmp/auth_key.p8') as f:
+              key = f.read()
+          api_key = {
+              'key_id': os.environ['KEY_ID'],
+              'issuer_id': os.environ['ISSUER_ID'],
+              'key': key
+          }
+          with open('/tmp/api_key.json', 'w') as f:
+              json.dump(api_key, f)
+          "
           fastlane run pilot ipa:"build/ios/ipa/Runner.ipa" skip_waiting_for_build_processing:true api_key_path:"/tmp/api_key.json"
