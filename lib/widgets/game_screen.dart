@@ -1,10 +1,40 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../game/piece.dart';
 import '../game/game_state.dart';
 import '../game/ai.dart';
 import 'board_widget.dart';
+import 'tutorial_screen.dart';
 
 enum _GameMode { vsAI, vsHuman }
+
+enum _TimerOption { off, min3, min5, min10 }
+
+Duration _timerDuration(_TimerOption opt) {
+  switch (opt) {
+    case _TimerOption.min3:
+      return const Duration(minutes: 3);
+    case _TimerOption.min5:
+      return const Duration(minutes: 5);
+    case _TimerOption.min10:
+      return const Duration(minutes: 10);
+    case _TimerOption.off:
+      return Duration.zero;
+  }
+}
+
+String _timerLabel(_TimerOption opt) {
+  switch (opt) {
+    case _TimerOption.off:
+      return 'Off';
+    case _TimerOption.min3:
+      return '3 min';
+    case _TimerOption.min5:
+      return '5 min';
+    case _TimerOption.min10:
+      return '10 min';
+  }
+}
 
 class GameScreen extends StatefulWidget {
   const GameScreen({super.key});
@@ -18,11 +48,76 @@ class _GameScreenState extends State<GameScreen> {
   final _ai = AiPlayer(maxDepth: 6);
   bool _isAiThinking = false;
   _GameMode _gameMode = _GameMode.vsAI;
+  _TimerOption _timerOption = _TimerOption.off;
+  Duration _blackTime = Duration.zero;
+  Duration _whiteTime = Duration.zero;
+  Timer? _timer;
 
   @override
   void initState() {
     super.initState();
     _state = GameState.initial();
+    _resetTimers();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _resetTimers() {
+    final limit = _timerDuration(_timerOption);
+    _blackTime = limit;
+    _whiteTime = limit;
+  }
+
+  void _startClock() {
+    _timer?.cancel();
+    if (_timerOption == _TimerOption.off) return;
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      setState(() {
+        if (_state.isGameOver) {
+          _timer?.cancel();
+          return;
+        }
+        if (_state.currentPlayer == Piece.black) {
+          _blackTime -= const Duration(seconds: 1);
+          if (_blackTime.inSeconds <= 0) {
+            _blackTime = Duration.zero;
+            _timer?.cancel();
+            _timeout(Piece.white);
+          }
+        } else {
+          _whiteTime -= const Duration(seconds: 1);
+          if (_whiteTime.inSeconds <= 0) {
+            _whiteTime = Duration.zero;
+            _timer?.cancel();
+            _timeout(Piece.black);
+          }
+        }
+      });
+    });
+  }
+
+  void _stopClock() {
+    _timer?.cancel();
+  }
+
+  void _timeout(Piece winner) {
+    _stopClock();
+    setState(() {
+      _state = GameState(
+        board: _state.board,
+        currentPlayer: _state.currentPlayer,
+        status: GameStatus.won,
+        winner: winner,
+        blackScore: _state.blackScore,
+        whiteScore: _state.whiteScore,
+        validMoves: [],
+      );
+    });
   }
 
   void _handleTap(int row, int col) {
@@ -34,11 +129,26 @@ class _GameScreenState extends State<GameScreen> {
 
     setState(() => _state = newState);
 
-    if (_gameMode == _GameMode.vsAI &&
-        !_state.isGameOver &&
-        _state.currentPlayer == Piece.white) {
-      _aiMove();
+    if (_gameMode == _GameMode.vsAI) {
+      if (!_state.isGameOver && _state.currentPlayer == Piece.white) {
+        _stopClock(); // pause human's clock while AI thinks
+        _aiMove();
+      } else if (!_state.isGameOver) {
+        _startClock(); // still human's turn (no valid AI moves, stayed on black)
+      } else {
+        _stopClock();
+      }
+    } else {
+      if (_state.isGameOver) {
+        _stopClock();
+      }
+      _switchClock();
     }
+  }
+
+  void _switchClock() {
+    if (_timerOption == _TimerOption.off || _state.isGameOver) return;
+    _startClock(); // tick the new current player's clock
   }
 
   Future<void> _aiMove() async {
@@ -55,25 +165,50 @@ class _GameScreenState extends State<GameScreen> {
 
       if (!_state.isGameOver && _state.currentPlayer == Piece.white) {
         _aiMove();
+      } else if (!_state.isGameOver) {
+        _startClock(); // back to human's turn
+      } else {
+        _stopClock();
       }
     } else {
-      if (mounted) setState(() => _isAiThinking = false);
+      if (mounted) {
+        setState(() => _isAiThinking = false);
+        if (!_state.isGameOver) {
+          _startClock(); // back to human's turn
+        }
+      }
     }
   }
 
-  void _toggleMode() {
+  void _cycleTimer() {
+    final values = _TimerOption.values;
+    final idx = (values.indexOf(_timerOption) + 1) % values.length;
     setState(() {
-      _gameMode =
-          _gameMode == _GameMode.vsAI ? _GameMode.vsHuman : _GameMode.vsAI;
+      _timerOption = values[idx];
+      _stopClock();
+      _resetTimers();
       _state = GameState.initial();
       _isAiThinking = false;
     });
   }
 
+  void _toggleMode() {
+    setState(() {
+      _stopClock();
+      _gameMode =
+          _gameMode == _GameMode.vsAI ? _GameMode.vsHuman : _GameMode.vsAI;
+      _state = GameState.initial();
+      _isAiThinking = false;
+      _resetTimers();
+    });
+  }
+
   void _reset() {
+    _stopClock();
     setState(() {
       _state = GameState.initial();
       _isAiThinking = false;
+      _resetTimers();
     });
   }
 
@@ -88,78 +223,23 @@ class _GameScreenState extends State<GameScreen> {
       lastMove: _state.lastMove,
     );
     setState(() => _state = newState);
-    if (_gameMode == _GameMode.vsAI && _state.currentPlayer == Piece.white) {
-      _aiMove();
+
+    if (_gameMode == _GameMode.vsAI) {
+      if (_state.currentPlayer == Piece.white) {
+        _stopClock();
+        _aiMove();
+      } else {
+        _startClock();
+      }
+    } else {
+      _switchClock();
     }
   }
 
   void _showTutorial() {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1a1a2e),
-        title: const Row(
-          children: [
-            Icon(Icons.school, color: Colors.white70),
-            SizedBox(width: 8),
-            Text('How to Play', style: TextStyle(color: Colors.white)),
-          ],
-        ),
-        content: SingleChildScrollView(
-          child: DefaultTextStyle(
-            style: const TextStyle(
-                color: Colors.white70, fontSize: 15, height: 1.5),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _tutSection('Objective',
-                    'Have the most pieces of your color on the board when the game ends.'),
-                const SizedBox(height: 12),
-                _tutSection('Setup',
-                    'The game starts with 4 pieces in the center: two black and two white, arranged diagonally.'),
-                const SizedBox(height: 12),
-                _tutSection('Gameplay',
-                    'Black moves first. On your turn, place one piece on an empty cell that outflanks one or more opponent pieces.'),
-                const SizedBox(height: 12),
-                _tutSection('Outflanking',
-                    'A move outflanks opponent pieces when your new piece forms a straight line (horizontal, vertical, or diagonal) with another of your pieces, with opponent pieces in between.'),
-                const SizedBox(height: 12),
-                _tutSection('Flipping',
-                    'All outflanked opponent pieces are flipped to your color. You must flip at least one piece each turn.'),
-                const SizedBox(height: 12),
-                _tutSection('Passing',
-                    'If you have no valid moves, you pass and your opponent goes again.'),
-                const SizedBox(height: 12),
-                _tutSection('Game Over',
-                    'The game ends when neither player can move. The player with the most pieces wins.'),
-              ],
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Got it!',
-                style: TextStyle(color: Color(0xFFe94560))),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _tutSection(String title, String body) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(title,
-            style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 16)),
-        const SizedBox(height: 4),
-        Text(body),
-      ],
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const TutorialScreen()),
     );
   }
 
@@ -181,6 +261,11 @@ class _GameScreenState extends State<GameScreen> {
         elevation: 0,
         actions: [
           IconButton(
+            icon: const Icon(Icons.timer_outlined),
+            tooltip: 'Timer: ${_timerLabel(_timerOption)}',
+            onPressed: _cycleTimer,
+          ),
+          IconButton(
             icon: Icon(_gameMode == _GameMode.vsAI
                 ? Icons.people_outline
                 : Icons.memory),
@@ -198,37 +283,48 @@ class _GameScreenState extends State<GameScreen> {
       ),
       body: Column(
         children: [
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           _ScoreRow(
             blackScore: _state.blackScore,
             whiteScore: _state.whiteScore,
             currentPlayer: _state.currentPlayer,
             isAiThinking: _isAiThinking,
+            blackTime: _timerOption != _TimerOption.off ? _blackTime : null,
+            whiteTime: _timerOption != _TimerOption.off ? _whiteTime : null,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
+          if (_timerOption != _TimerOption.off && !_state.isGameOver)
+            _TimerIndicator(
+              player: _state.currentPlayer,
+              isAiThinking: _isAiThinking,
+              isTwoPlayer: _gameMode == _GameMode.vsHuman,
+            ),
           if (_state.isGameOver)
             _GameOverBanner(winner: _state.winner, onReset: _reset)
-          else
+          else if (_timerOption == _TimerOption.off)
             _TurnIndicator(
               player: _state.currentPlayer,
               isAi: _isAiThinking,
               isTwoPlayer: _gameMode == _GameMode.vsHuman,
             ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           Expanded(
             child: Center(
               child: BoardWidget(state: _state, onTap: _handleTap),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           _buildBottomBar(),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
         ],
       ),
     );
   }
 
   Widget _buildBottomBar() {
+    final canPass = _state.validMoves.isEmpty &&
+        !_state.isGameOver &&
+        !_isAiThinking;
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -241,28 +337,30 @@ class _GameScreenState extends State<GameScreen> {
         _ActionButton(
           icon: Icons.undo,
           label: 'Pass',
-          onTap: _state.validMoves.isEmpty &&
-                  !_state.isGameOver &&
-                  !_isAiThinking
-              ? _passTurn
-              : null,
+          onTap: canPass ? _passTurn : null,
         ),
       ],
     );
   }
 }
 
+// ---- Score Row ----
+
 class _ScoreRow extends StatelessWidget {
   final int blackScore;
   final int whiteScore;
   final Piece currentPlayer;
   final bool isAiThinking;
+  final Duration? blackTime;
+  final Duration? whiteTime;
 
   const _ScoreRow({
     required this.blackScore,
     required this.whiteScore,
     required this.currentPlayer,
     required this.isAiThinking,
+    this.blackTime,
+    this.whiteTime,
   });
 
   @override
@@ -276,12 +374,14 @@ class _ScoreRow extends StatelessWidget {
             piece: Piece.black,
             score: blackScore,
             isActive: currentPlayer == Piece.black && !isAiThinking,
+            remainingTime: blackTime,
           ),
-          const SizedBox(width: 32),
+          const SizedBox(width: 24),
           _ScoreChip(
             piece: Piece.white,
             score: whiteScore,
             isActive: currentPlayer == Piece.white && !isAiThinking,
+            remainingTime: whiteTime,
           ),
         ],
       ),
@@ -293,17 +393,35 @@ class _ScoreChip extends StatelessWidget {
   final Piece piece;
   final int score;
   final bool isActive;
+  final Duration? remainingTime;
 
   const _ScoreChip({
     required this.piece,
     required this.score,
     required this.isActive,
+    this.remainingTime,
   });
 
   @override
   Widget build(BuildContext context) {
+    final hasTimer = remainingTime != null;
+
+    String timeStr = '';
+    Color? timeColor;
+    if (hasTimer) {
+      final secs = remainingTime!.inSeconds;
+      final m = secs ~/ 60;
+      final s = secs % 60;
+      timeStr = '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+      timeColor = secs <= 10
+          ? const Color(0xFFe94560)
+          : secs <= 30
+              ? const Color(0xFFFFAA44)
+              : Colors.white54;
+    }
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: isActive
             ? (piece == Piece.black ? Colors.black87 : Colors.white12)
@@ -316,30 +434,99 @@ class _ScoreChip extends StatelessWidget {
           width: 2,
         ),
       ),
-      child: Row(
+      child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            piece.label,
-            style: TextStyle(
-              fontSize: 24,
-              color: piece == Piece.black ? Colors.white : Colors.white,
-            ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                piece.label,
+                style: const TextStyle(
+                  fontSize: 24,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '$score',
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 8),
-          Text(
-            '$score',
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
+          if (hasTimer) ...[
+            const SizedBox(height: 4),
+            Text(
+              timeStr,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                fontFamily: 'monospace',
+                color: timeColor,
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );
   }
 }
+
+// ---- Timer Indicator ----
+
+class _TimerIndicator extends StatelessWidget {
+  final Piece player;
+  final bool isAiThinking;
+  final bool isTwoPlayer;
+
+  const _TimerIndicator({
+    required this.player,
+    required this.isAiThinking,
+    required this.isTwoPlayer,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final label = isAiThinking
+        ? 'AI thinking...'
+        : isTwoPlayer
+            ? "${player == Piece.black ? "Black" : "White"}'s clock"
+            : "Your clock";
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        decoration: BoxDecoration(
+          color: const Color(0xFF16213e),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.timer,
+              size: 14,
+              color: Colors.white.withAlpha(180),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white54,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ---- Turn Indicator ----
 
 class _TurnIndicator extends StatelessWidget {
   final Piece player;
@@ -399,6 +586,8 @@ class _TurnIndicator extends StatelessWidget {
   }
 }
 
+// ---- Game Over Banner ----
+
 class _GameOverBanner extends StatelessWidget {
   final Piece? winner;
   final VoidCallback onReset;
@@ -410,7 +599,6 @@ class _GameOverBanner extends StatelessWidget {
     final text = winner == null
         ? "It's a Draw!"
         : '${winner == Piece.black ? "Black" : "White"} Wins!';
-    final color = Colors.white;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
@@ -423,7 +611,7 @@ class _GameOverBanner extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.emoji_events, color: color, size: 22),
+          const Icon(Icons.emoji_events, color: Colors.white, size: 22),
           const SizedBox(width: 8),
           Text(
             text,
@@ -444,6 +632,8 @@ class _GameOverBanner extends StatelessWidget {
   }
 }
 
+// ---- Action Button ----
+
 class _ActionButton extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -457,30 +647,33 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final disabled = onTap == null;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         decoration: BoxDecoration(
-          color: onTap != null
-              ? const Color(0xFF16213e)
-              : const Color(0xFF16213e).withAlpha(80),
+          color: disabled
+              ? const Color(0xFF16213e).withAlpha(80)
+              : const Color(0xFF16213e),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: onTap != null ? Colors.white24 : Colors.white10,
+            color: disabled ? Colors.white10 : Colors.white24,
           ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon,
-                color: onTap != null ? Colors.white70 : Colors.white30,
-                size: 18),
+            Icon(
+              icon,
+              color: disabled ? Colors.white30 : Colors.white70,
+              size: 18,
+            ),
             const SizedBox(width: 6),
             Text(
               label,
               style: TextStyle(
-                color: onTap != null ? Colors.white70 : Colors.white30,
+                color: disabled ? Colors.white30 : Colors.white70,
                 fontSize: 14,
               ),
             ),
