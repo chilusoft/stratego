@@ -2,11 +2,14 @@
 
 A **Reversi (Othello)** game built with Flutter. Play against an AI opponent or with two players on the same device. Features a minimax AI with alpha-beta pruning, a clean dark-themed UI, and a tutorial for new players.
 
+**Play in your browser:** [chilusoft.github.io/stratego](https://chilusoft.github.io/stratego/)
+
 ## Features
 
-- **vs AI**: Play as Black against a minimax AI (depth 6) with alpha-beta pruning
+- **vs AI**: Play as Black against a minimax AI with alpha-beta pruning (4 difficulty levels)
 - **Two-player**: Hot-seat mode — two players share the device and take turns
-- **Tutorial**: Tap the info icon to learn the rules
+- **Timed mode**: Chess-clock timer (3/5/10 min per player) with timeout
+- **Tutorial**: Animated multi-page tutorial explaining rules with visual demos
 - **Pass**: When you have no valid moves, use the Pass button
 - **Move hints**: Valid cells are highlighted in green
 
@@ -60,6 +63,10 @@ On `linux-arm64`, Flutter looks for these under `.../engine/android-*-release/li
 - **AOT compilation under emulation**: `gen_snapshot` is CPU-intensive and must cross-compile Dart to native ARM64 code while itself running under x86_64 emulation. On slow hardware this can take 10+ minutes.
 - **Multiple non-obvious failure points**: Even after fixing `gen_snapshot`, `aapt2` (from AGP Maven cache), the Kotlin daemon, and Gradle's immutable workspace caching can all fail in opaque ways on arm64.
 - **Gradle cache poisoning**: The Gradle transform cache for aapt2 is marked immutable; if it's extracted as an x86_64 binary and run on arm64 without qemu, the cache entry gets corrupted and must be manually purged.
+
+### Play Online
+
+Play in your browser at **[chilusoft.github.io/stratego](https://chilusoft.github.io/stratego/)** — no installation required.
 
 ### Installing the APK
 
