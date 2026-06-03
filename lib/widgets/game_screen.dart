@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../game/piece.dart';
 import '../game/game_state.dart';
 import '../game/ai.dart';
+import '../audio/audio_service.dart';
 import 'board_widget.dart';
 import 'tutorial_screen.dart';
 
@@ -147,6 +148,7 @@ class _GameScreenState extends State<GameScreen> {
         validMoves: [],
       );
     });
+    AudioService.playWin();
   }
 
   void _handleTap(int row, int col) {
@@ -157,6 +159,13 @@ class _GameScreenState extends State<GameScreen> {
     if (newState == _state) return;
 
     setState(() => _state = newState);
+    AudioService.playMove();
+
+    if (newState.isGameOver) {
+      newState.winner == null
+          ? AudioService.playDraw()
+          : AudioService.playWin();
+    }
 
     if (_gameMode == _GameMode.vsAI) {
       if (!_state.isGameOver && _state.currentPlayer == Piece.white) {
@@ -187,10 +196,18 @@ class _GameScreenState extends State<GameScreen> {
 
     final move = _ai.bestMove(_state.board, Piece.white);
     if (move != null && mounted) {
+      final aiState = _state.makeMove(move[0], move[1]);
       setState(() {
-        _state = _state.makeMove(move[0], move[1]);
+        _state = aiState;
         _isAiThinking = false;
       });
+      AudioService.playMove();
+
+      if (aiState.isGameOver) {
+        aiState.winner == null
+            ? AudioService.playDraw()
+            : AudioService.playWin();
+      }
 
       if (!_state.isGameOver && _state.currentPlayer == Piece.white) {
         _aiMove();
