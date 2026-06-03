@@ -36,6 +36,34 @@ String _timerLabel(_TimerOption opt) {
   }
 }
 
+enum _AIDifficulty { easy, medium, hard, expert }
+
+int _depthFor(_AIDifficulty d) {
+  switch (d) {
+    case _AIDifficulty.easy:
+      return 2;
+    case _AIDifficulty.medium:
+      return 4;
+    case _AIDifficulty.hard:
+      return 6;
+    case _AIDifficulty.expert:
+      return 8;
+  }
+}
+
+String _difficultyLabel(_AIDifficulty d) {
+  switch (d) {
+    case _AIDifficulty.easy:
+      return 'Easy';
+    case _AIDifficulty.medium:
+      return 'Medium';
+    case _AIDifficulty.hard:
+      return 'Hard';
+    case _AIDifficulty.expert:
+      return 'Expert';
+  }
+}
+
 class GameScreen extends StatefulWidget {
   const GameScreen({super.key});
 
@@ -45,9 +73,10 @@ class GameScreen extends StatefulWidget {
 
 class _GameScreenState extends State<GameScreen> {
   late GameState _state;
-  final _ai = AiPlayer(maxDepth: 6);
+  AiPlayer _ai = AiPlayer(maxDepth: _depthFor(_AIDifficulty.hard));
   bool _isAiThinking = false;
   _GameMode _gameMode = _GameMode.vsAI;
+  _AIDifficulty _aiDifficulty = _AIDifficulty.hard;
   _TimerOption _timerOption = _TimerOption.off;
   Duration _blackTime = Duration.zero;
   Duration _whiteTime = Duration.zero;
@@ -192,11 +221,25 @@ class _GameScreenState extends State<GameScreen> {
     });
   }
 
+  void _cycleDifficulty() {
+    final values = _AIDifficulty.values;
+    final idx = (values.indexOf(_aiDifficulty) + 1) % values.length;
+    setState(() {
+      _aiDifficulty = values[idx];
+      _ai = AiPlayer(maxDepth: _depthFor(_aiDifficulty));
+      _state = GameState.initial();
+      _isAiThinking = false;
+      _resetTimers();
+    });
+  }
+
   void _toggleMode() {
     setState(() {
       _stopClock();
       _gameMode =
           _gameMode == _GameMode.vsAI ? _GameMode.vsHuman : _GameMode.vsAI;
+      _aiDifficulty = _AIDifficulty.hard;
+      _ai = AiPlayer(maxDepth: _depthFor(_AIDifficulty.hard));
       _state = GameState.initial();
       _isAiThinking = false;
       _resetTimers();
@@ -265,6 +308,12 @@ class _GameScreenState extends State<GameScreen> {
             tooltip: 'Timer: ${_timerLabel(_timerOption)}',
             onPressed: _cycleTimer,
           ),
+          if (_gameMode == _GameMode.vsAI)
+            IconButton(
+              icon: const Icon(Icons.auto_awesome),
+              tooltip: 'Difficulty: ${_difficultyLabel(_aiDifficulty)}',
+              onPressed: _cycleDifficulty,
+            ),
           IconButton(
             icon: Icon(_gameMode == _GameMode.vsAI
                 ? Icons.people_outline
@@ -298,6 +347,9 @@ class _GameScreenState extends State<GameScreen> {
               player: _state.currentPlayer,
               isAiThinking: _isAiThinking,
               isTwoPlayer: _gameMode == _GameMode.vsHuman,
+              difficultyLabel: _gameMode == _GameMode.vsAI
+                  ? _difficultyLabel(_aiDifficulty)
+                  : null,
             ),
           if (_state.isGameOver)
             _GameOverBanner(winner: _state.winner, onReset: _reset)
@@ -306,6 +358,9 @@ class _GameScreenState extends State<GameScreen> {
               player: _state.currentPlayer,
               isAi: _isAiThinking,
               isTwoPlayer: _gameMode == _GameMode.vsHuman,
+              difficultyLabel: _gameMode == _GameMode.vsAI && !_isAiThinking
+                  ? _difficultyLabel(_aiDifficulty)
+                  : null,
             ),
           const SizedBox(height: 8),
           Expanded(
@@ -482,20 +537,26 @@ class _TimerIndicator extends StatelessWidget {
   final Piece player;
   final bool isAiThinking;
   final bool isTwoPlayer;
+  final String? difficultyLabel;
 
   const _TimerIndicator({
     required this.player,
     required this.isAiThinking,
     required this.isTwoPlayer,
+    this.difficultyLabel,
   });
 
   @override
   Widget build(BuildContext context) {
     final label = isAiThinking
-        ? 'AI thinking...'
+        ? difficultyLabel != null
+            ? 'AI thinking... ($difficultyLabel)'
+            : 'AI thinking...'
         : isTwoPlayer
             ? "${player == Piece.black ? "Black" : "White"}'s clock"
-            : "Your clock";
+            : difficultyLabel != null
+                ? "Your clock ($difficultyLabel)"
+                : "Your clock";
     return Center(
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -532,20 +593,26 @@ class _TurnIndicator extends StatelessWidget {
   final Piece player;
   final bool isAi;
   final bool isTwoPlayer;
+  final String? difficultyLabel;
 
   const _TurnIndicator({
     required this.player,
     required this.isAi,
     required this.isTwoPlayer,
+    this.difficultyLabel,
   });
 
   @override
   Widget build(BuildContext context) {
     final label = isAi
-        ? 'AI thinking...'
+        ? difficultyLabel != null
+            ? 'AI thinking... ($difficultyLabel)'
+            : 'AI thinking...'
         : isTwoPlayer
             ? "${player == Piece.black ? "Black" : "White"}'s turn"
-            : "Your turn";
+            : difficultyLabel != null
+                ? "Your turn ($difficultyLabel)"
+                : "Your turn";
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
