@@ -1,4 +1,4 @@
-package com.example.stratego
+package dev.chilusoft.stratego
 
 import io.flutter.embedding.android.FlutterActivity
 
