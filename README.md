@@ -1,6 +1,24 @@
 # stratego
 
-A Flutter application.
+A **Reversi (Othello)** game built with Flutter. Play against an AI opponent or with two players on the same device. Features a minimax AI with alpha-beta pruning, a clean dark-themed UI, and a tutorial for new players.
+
+## Features
+
+- **vs AI**: Play as Black against a minimax AI (depth 6) with alpha-beta pruning
+- **Two-player**: Hot-seat mode — two players share the device and take turns
+- **Tutorial**: Tap the info icon to learn the rules
+- **Pass**: When you have no valid moves, use the Pass button
+- **Move hints**: Valid cells are highlighted in green
+
+## How to Play
+
+- **Objective**: Have the most pieces of your color when the game ends
+- **Setup**: 4 pieces start in the center (2 black, 2 white, diagonally)
+- **Black moves first**. Place a piece on an empty cell that outflanks opponent pieces
+- **Outflanking**: Your new piece must form a straight line (horizontal, vertical, or diagonal) with another of your pieces, with opponent pieces in between
+- **Flipping**: All outflanked opponent pieces are flipped to your color
+- **Passing**: If you have no valid moves, you pass and your opponent goes again
+- **Game Over**: Ends when neither player can move. Most pieces wins
 
 ## Building for Android on `linux-arm64` (an experiment)
 
