@@ -4,6 +4,8 @@ import '../game/game_state.dart';
 import '../game/ai.dart';
 import 'board_widget.dart';
 
+enum _GameMode { vsAI, vsHuman }
+
 class GameScreen extends StatefulWidget {
   const GameScreen({super.key});
 
@@ -15,6 +17,7 @@ class _GameScreenState extends State<GameScreen> {
   late GameState _state;
   final _ai = AiPlayer(maxDepth: 6);
   bool _isAiThinking = false;
+  _GameMode _gameMode = _GameMode.vsAI;
 
   @override
   void initState() {
@@ -24,14 +27,16 @@ class _GameScreenState extends State<GameScreen> {
 
   void _handleTap(int row, int col) {
     if (_isAiThinking || _state.isGameOver) return;
-    if (_state.currentPlayer != Piece.black) return;
+    if (_gameMode == _GameMode.vsAI && _state.currentPlayer != Piece.black) return;
 
     final newState = _state.makeMove(row, col);
     if (newState == _state) return;
 
     setState(() => _state = newState);
 
-    if (!_state.isGameOver && _state.currentPlayer == Piece.white) {
+    if (_gameMode == _GameMode.vsAI &&
+        !_state.isGameOver &&
+        _state.currentPlayer == Piece.white) {
       _aiMove();
     }
   }
@@ -56,11 +61,106 @@ class _GameScreenState extends State<GameScreen> {
     }
   }
 
+  void _toggleMode() {
+    setState(() {
+      _gameMode =
+          _gameMode == _GameMode.vsAI ? _GameMode.vsHuman : _GameMode.vsAI;
+      _state = GameState.initial();
+      _isAiThinking = false;
+    });
+  }
+
   void _reset() {
     setState(() {
       _state = GameState.initial();
       _isAiThinking = false;
     });
+  }
+
+  void _passTurn() {
+    final newState = GameState(
+      board: _state.board,
+      currentPlayer: _state.currentPlayer.opponent,
+      validMoves: _state.board
+          .getPotentialMoves(_state.currentPlayer.opponent),
+      blackScore: _state.blackScore,
+      whiteScore: _state.whiteScore,
+      lastMove: _state.lastMove,
+    );
+    setState(() => _state = newState);
+    if (_gameMode == _GameMode.vsAI && _state.currentPlayer == Piece.white) {
+      _aiMove();
+    }
+  }
+
+  void _showTutorial() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1a1a2e),
+        title: const Row(
+          children: [
+            Icon(Icons.school, color: Colors.white70),
+            SizedBox(width: 8),
+            Text('How to Play', style: TextStyle(color: Colors.white)),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: DefaultTextStyle(
+            style: const TextStyle(
+                color: Colors.white70, fontSize: 15, height: 1.5),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _tutSection('Objective',
+                    'Have the most pieces of your color on the board when the game ends.'),
+                const SizedBox(height: 12),
+                _tutSection('Setup',
+                    'The game starts with 4 pieces in the center: two black and two white, arranged diagonally.'),
+                const SizedBox(height: 12),
+                _tutSection('Gameplay',
+                    'Black moves first. On your turn, place one piece on an empty cell that outflanks one or more opponent pieces.'),
+                const SizedBox(height: 12),
+                _tutSection('Outflanking',
+                    'A move outflanks opponent pieces when your new piece forms a straight line (horizontal, vertical, or diagonal) with another of your pieces, with opponent pieces in between.'),
+                const SizedBox(height: 12),
+                _tutSection('Flipping',
+                    'All outflanked opponent pieces are flipped to your color. You must flip at least one piece each turn.'),
+                const SizedBox(height: 12),
+                _tutSection('Passing',
+                    'If you have no valid moves, you pass and your opponent goes again.'),
+                const SizedBox(height: 12),
+                _tutSection('Game Over',
+                    'The game ends when neither player can move. The player with the most pieces wins.'),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Got it!',
+                style: TextStyle(color: Color(0xFFe94560))),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _tutSection(String title, String body) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title,
+            style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 16)),
+        const SizedBox(height: 4),
+        Text(body),
+      ],
+    );
   }
 
   @override
@@ -79,6 +179,22 @@ class _GameScreenState extends State<GameScreen> {
         backgroundColor: const Color(0xFF16213e),
         foregroundColor: Colors.white,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: Icon(_gameMode == _GameMode.vsAI
+                ? Icons.people_outline
+                : Icons.memory),
+            tooltip: _gameMode == _GameMode.vsAI
+                ? 'Two-player mode'
+                : 'AI opponent',
+            onPressed: _toggleMode,
+          ),
+          IconButton(
+            icon: const Icon(Icons.info_outline),
+            tooltip: 'How to play',
+            onPressed: _showTutorial,
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -96,6 +212,7 @@ class _GameScreenState extends State<GameScreen> {
             _TurnIndicator(
               player: _state.currentPlayer,
               isAi: _isAiThinking,
+              isTwoPlayer: _gameMode == _GameMode.vsHuman,
             ),
           const SizedBox(height: 12),
           Expanded(
@@ -124,20 +241,10 @@ class _GameScreenState extends State<GameScreen> {
         _ActionButton(
           icon: Icons.undo,
           label: 'Pass',
-          onTap: _state.validMoves.isEmpty && !_state.isGameOver && !_isAiThinking
-              ? () {
-                  final newState = GameState(
-                    board: _state.board,
-                    currentPlayer: _state.currentPlayer.opponent,
-                    validMoves: _state.board
-                        .getPotentialMoves(_state.currentPlayer.opponent),
-                    blackScore: _state.blackScore,
-                    whiteScore: _state.whiteScore,
-                    lastMove: _state.lastMove,
-                  );
-                  setState(() => _state = newState);
-                  if (_state.currentPlayer == Piece.white) _aiMove();
-                }
+          onTap: _state.validMoves.isEmpty &&
+                  !_state.isGameOver &&
+                  !_isAiThinking
+              ? _passTurn
               : null,
         ),
       ],
@@ -237,11 +344,22 @@ class _ScoreChip extends StatelessWidget {
 class _TurnIndicator extends StatelessWidget {
   final Piece player;
   final bool isAi;
+  final bool isTwoPlayer;
 
-  const _TurnIndicator({required this.player, required this.isAi});
+  const _TurnIndicator({
+    required this.player,
+    required this.isAi,
+    required this.isTwoPlayer,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final label = isAi
+        ? 'AI thinking...'
+        : isTwoPlayer
+            ? "${player == Piece.black ? "Black" : "White"}'s turn"
+            : "Your turn";
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       decoration: BoxDecoration(
@@ -257,9 +375,7 @@ class _TurnIndicator extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Text(
-            isAi
-                ? 'AI thinking...'
-                : "Your turn",
+            label,
             style: const TextStyle(
               color: Colors.white70,
               fontSize: 14,
@@ -294,9 +410,7 @@ class _GameOverBanner extends StatelessWidget {
     final text = winner == null
         ? "It's a Draw!"
         : '${winner == Piece.black ? "Black" : "White"} Wins!';
-    final color = winner == Piece.black
-        ? Colors.white
-        : Colors.white;
+    final color = Colors.white;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
@@ -359,7 +473,9 @@ class _ActionButton extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: onTap != null ? Colors.white70 : Colors.white30, size: 18),
+            Icon(icon,
+                color: onTap != null ? Colors.white70 : Colors.white30,
+                size: 18),
             const SizedBox(width: 6),
             Text(
               label,
