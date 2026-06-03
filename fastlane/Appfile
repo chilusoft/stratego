@@ -1,0 +1,2 @@
+app_identifier("dev.chilusoft.stratego")
+apple_id(ENV["APP_STORE_CONNECT_USERNAME"])
