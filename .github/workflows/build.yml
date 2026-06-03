@@ -128,17 +128,18 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_KEY_CONTENT }}
+          KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
         run: |
-          cat > /tmp/auth_key.p8 <<'KEYEOF'
-${{ secrets.APP_STORE_CONNECT_KEY_CONTENT }}
-KEYEOF
+          printf '%s' "$KEY_CONTENT" > /tmp/auth_key.p8
           python3 -c "
-import json, base64
+import json, os
 with open('/tmp/auth_key.p8') as f:
     key = f.read()
 api_key = {
-    'key_id': '${{ secrets.APP_STORE_CONNECT_KEY_ID }}',
-    'issuer_id': '${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}',
+    'key_id': os.environ['KEY_ID'],
+    'issuer_id': os.environ['ISSUER_ID'],
     'key': key
 }
 with open('/tmp/api_key.json', 'w') as f:
@@ -150,17 +151,19 @@ with open('/tmp/api_key.json', 'w') as f:
         run: flutter build ipa --release
 
       - name: Upload to TestFlight
+        env:
+          KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_KEY_CONTENT }}
+          KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
         run: |
-          cat > /tmp/auth_key.p8 <<'KEYEOF'
-${{ secrets.APP_STORE_CONNECT_KEY_CONTENT }}
-KEYEOF
+          printf '%s' "$KEY_CONTENT" > /tmp/auth_key.p8
           python3 -c "
-import json
+import json, os
 with open('/tmp/auth_key.p8') as f:
     key = f.read()
 api_key = {
-    'key_id': '${{ secrets.APP_STORE_CONNECT_KEY_ID }}',
-    'issuer_id': '${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}',
+    'key_id': os.environ['KEY_ID'],
+    'issuer_id': os.environ['ISSUER_ID'],
     'key': key
 }
 with open('/tmp/api_key.json', 'w') as f:
