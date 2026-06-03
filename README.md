@@ -1,5 +1,8 @@
 # stratego
 
+[![tests](https://img.shields.io/github/actions/workflow/status/chilusoft/stratego/test.yml?label=tests)](https://github.com/chilusoft/stratego/actions/workflows/test.yml)
+[![coverage](https://img.shields.io/badge/coverage-83.8%25-green)](https://github.com/chilusoft/stratego/actions/workflows/test.yml)
+
 A **Reversi (Othello)** game built with Flutter. Play against an AI opponent or with two players on the same device. Features a minimax AI with alpha-beta pruning, a clean dark-themed UI, and a tutorial for new players.
 
 **Play in your browser:** [chilusoft.github.io/stratego](https://chilusoft.github.io/stratego/)
