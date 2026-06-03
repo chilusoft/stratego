@@ -129,9 +129,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
         run: |
-          cat > /tmp/auth_key.p8 << 'KEYEOF'
-          ${{ secrets.APP_STORE_CONNECT_KEY_CONTENT }}
-          KEYEOF
+          cat > /tmp/auth_key.p8 <<'KEYEOF'
+${{ secrets.APP_STORE_CONNECT_KEY_CONTENT }}
+KEYEOF
           python3 -c "
 import json, base64
 with open('/tmp/auth_key.p8') as f:
@@ -151,9 +151,9 @@ with open('/tmp/api_key.json', 'w') as f:
 
       - name: Upload to TestFlight
         run: |
-          cat > /tmp/auth_key.p8 << 'KEYEOF'
-          ${{ secrets.APP_STORE_CONNECT_KEY_CONTENT }}
-          KEYEOF
+          cat > /tmp/auth_key.p8 <<'KEYEOF'
+${{ secrets.APP_STORE_CONNECT_KEY_CONTENT }}
+KEYEOF
           python3 -c "
 import json
 with open('/tmp/auth_key.p8') as f:
