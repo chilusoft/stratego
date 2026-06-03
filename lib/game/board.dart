@@ -9,10 +9,10 @@ class Board {
           size,
           (_) => List.filled(size, Piece.empty),
         ) {
-    grid[3][3] = Piece.white;
-    grid[3][4] = Piece.black;
-    grid[4][3] = Piece.black;
-    grid[4][4] = Piece.white;
+    grid[3][3] = Piece.black;
+    grid[3][4] = Piece.white;
+    grid[4][3] = Piece.white;
+    grid[4][4] = Piece.black;
   }
 
   Board._(this.grid);

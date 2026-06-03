@@ -14,10 +14,10 @@ void main() {
 
     test('sets initial 4 pieces', () {
       final board = Board();
-      expect(board.get(3, 3), Piece.white);
-      expect(board.get(3, 4), Piece.black);
-      expect(board.get(4, 3), Piece.black);
-      expect(board.get(4, 4), Piece.white);
+      expect(board.get(3, 3), Piece.black);
+      expect(board.get(3, 4), Piece.white);
+      expect(board.get(4, 3), Piece.white);
+      expect(board.get(4, 4), Piece.black);
     });
 
     test('rest of board is empty', () {
@@ -71,8 +71,7 @@ void main() {
 
     test('detects flip in one direction', () {
       final board = Board();
-      // Black at (2,3) flips white at (3,3) - wait no
-      // Initial: W at (3,3), B at (3,4), B at (4,3), W at (4,4)
+      // Standard opening: B at (3,3), W at (3,4), W at (4,3), B at (4,4)
       // If black plays at (5,3): it would flip (4,3) which is black's own piece
       // Actually let's think: black at (4,3), so black at (5,3) would need to sandwich white
       // Let me use a simpler scenario
@@ -150,10 +149,10 @@ void main() {
       final moves = board.getPotentialMoves(Piece.black);
       expect(moves, hasLength(4));
       expect(moves, containsAll([
-        [2, 3],
-        [3, 2],
-        [4, 5],
-        [5, 4],
+        [2, 4],
+        [3, 5],
+        [4, 2],
+        [5, 3],
       ]));
     });
 
@@ -179,8 +178,8 @@ void main() {
 
     test('after placing a piece, count changes', () {
       final board = Board();
-      board.place(Piece.black, 2, 3);
-      expect(board.count(Piece.black), 4); // placed + flipped (3,3) white
+      board.place(Piece.black, 2, 4);
+      expect(board.count(Piece.black), 4); // placed + flipped (3,4) white
       expect(board.count(Piece.white), 1);
     });
   });

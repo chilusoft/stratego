@@ -69,8 +69,8 @@ void main() {
     test('handles white player', () {
       final b = Board();
       final ai = AiPlayer(maxDepth: 2);
-      // After black plays (2,3), white's turn has moves
-      b.place(Piece.black, 2, 3);
+      // After black plays (2,4), white's turn has moves
+      b.place(Piece.black, 2, 4);
       final move = ai.bestMove(b, Piece.white);
       expect(move, isNotNull);
       final validMoves = b.getPotentialMoves(Piece.white);

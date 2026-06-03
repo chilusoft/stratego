@@ -52,12 +52,12 @@ void main() {
   group('GameState.makeMove', () {
     test('makes a valid move and switches player', () {
       final state = GameState.initial();
-      final next = state.makeMove(2, 3);
+      final next = state.makeMove(2, 4);
       expect(next, isNot(same(state)));
       expect(next.currentPlayer, Piece.white);
-      expect(next.lastMove, [[2, 3]]);
-      expect(next.board.get(2, 3), Piece.black);
-      expect(next.board.get(3, 3), Piece.black); // flipped
+      expect(next.lastMove, [[2, 4]]);
+      expect(next.board.get(2, 4), Piece.black);
+      expect(next.board.get(3, 4), Piece.black); // flipped
     });
 
     test('returns same state for invalid move', () {
@@ -72,8 +72,8 @@ void main() {
       // Place pieces to create a scenario
       // This is tricky to reproduce naturally, so let's set up via makeMove
       // We'll do a sequence of moves and check the turn logic
-      var s = state.makeMove(2, 3);
-      s = s.makeMove(2, 4);
+      var s = state.makeMove(2, 4);
+      s = s.makeMove(4, 5);
       s = s.makeMove(5, 4);
       // After several moves, just verify it doesn't crash
       expect(s.currentPlayer, anyOf(Piece.black, Piece.white));
@@ -120,7 +120,7 @@ void main() {
       final state = GameState.initial();
       var s = state;
       // Make several moves to see the game progresses correctly
-      for (final move in [[2, 3], [2, 4], [5, 4], [5, 3]]) {
+      for (final move in [[2, 4], [2, 3], [5, 4], [5, 3]]) {
         final next = s.makeMove(move[0], move[1]);
         if (next == s) break;
         s = next;

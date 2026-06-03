@@ -66,14 +66,14 @@ void main() {
         ),
       );
 
-      // Tap on a valid cell (2,3)
-      // The cell at (r=2, c=3) in the 8x8 grid
+      // Tap on a valid cell (2,4)
+      // The cell at (r=2, c=4) in the 8x8 grid
       // We need to find the GestureDetector for that cell
       final cells = find.byType(GestureDetector);
-      // Cells: 8 rows x 8 cols = 64 cells. (2,3) is at index 2*8+3 = 19
-      await tester.tap(cells.at(19));
+      // Cells: 8 rows x 8 cols = 64 cells. (2,4) is at index 2*8+4 = 20
+      await tester.tap(cells.at(20));
       expect(tappedRow, 2);
-      expect(tappedCol, 3);
+      expect(tappedCol, 4);
     });
   });
 }
