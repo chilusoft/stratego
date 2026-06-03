@@ -11,6 +11,11 @@ on:
         description: 'Build number (e.g. 2)'
         required: true
         type: string
+      upload_testflight:
+        description: 'Upload to TestFlight'
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   build:
@@ -98,7 +103,7 @@ jobs:
           path: build/ios/iphoneos/Runner.app
 
   testflight:
-    if: ${{ secrets.APP_STORE_CONNECT_USERNAME != '' }}
+    if: ${{ inputs.upload_testflight }}
     runs-on: macos-latest
     needs: ios
     steps:
