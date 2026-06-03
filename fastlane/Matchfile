@@ -1,4 +1,3 @@
 git_url("https://x-access-token:#{ENV["GITHUB_TOKEN"]}@github.com/chilusoft/stratego.git")
 type("appstore")
 app_identifier("dev.chilusoft.stratego")
-username(ENV["APP_STORE_CONNECT_USERNAME"])
