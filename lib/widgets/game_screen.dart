@@ -496,12 +496,12 @@ class _ScoreChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: isActive
-            ? (piece == Piece.black ? Colors.black87 : Colors.white12)
+            ? const Color(0xFF1e2a3e)
             : const Color(0xFF16213e),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isActive
-              ? (piece == Piece.black ? Colors.white : Colors.white54)
+              ? (piece == Piece.black ? Colors.white : const Color(0xFFe94560))
               : Colors.transparent,
           width: 2,
         ),
@@ -512,11 +512,15 @@ class _ScoreChip extends StatelessWidget {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                piece.label,
-                style: const TextStyle(
-                  fontSize: 24,
-                  color: Colors.white,
+              Container(
+                width: 20,
+                height: 20,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: piece == Piece.black ? Colors.black : Colors.white,
+                  border: piece == Piece.white
+                      ? Border.all(color: Colors.grey.shade400, width: 1.5)
+                      : null,
                 ),
               ),
               const SizedBox(width: 8),
