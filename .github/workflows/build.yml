@@ -74,6 +74,9 @@ jobs:
           name: aab
           path: build/app/outputs/bundle/release/app-release.aab
 
+      - name: Copy index.html to 404.html for SPA routing
+        run: cp build/web/index.html build/web/404.html
+
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
