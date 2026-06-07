@@ -76,6 +76,7 @@ class _GameScreenState extends State<GameScreen> {
   late GameState _state;
   AiPlayer _ai = AiPlayer(maxDepth: _depthFor(_AIDifficulty.hard));
   bool _isAiThinking = false;
+  Piece _playerColor = Piece.white;
   _GameMode _gameMode = _GameMode.vsAI;
   _AIDifficulty _aiDifficulty = _AIDifficulty.hard;
   _TimerOption _timerOption = _TimerOption.off;
@@ -88,6 +89,9 @@ class _GameScreenState extends State<GameScreen> {
     super.initState();
     _state = GameState.initial();
     _resetTimers();
+    if (_gameMode == _GameMode.vsAI && _state.currentPlayer != _playerColor) {
+      Future.microtask(_aiMove);
+    }
   }
 
   @override
@@ -153,7 +157,7 @@ class _GameScreenState extends State<GameScreen> {
 
   void _handleTap(int row, int col) {
     if (_isAiThinking || _state.isGameOver) return;
-    if (_gameMode == _GameMode.vsAI && _state.currentPlayer != Piece.black) return;
+    if (_gameMode == _GameMode.vsAI && _state.currentPlayer != _playerColor) return;
 
     final newState = _state.makeMove(row, col);
     if (newState == _state) return;
@@ -167,21 +171,7 @@ class _GameScreenState extends State<GameScreen> {
           : AudioService.playWin();
     }
 
-    if (_gameMode == _GameMode.vsAI) {
-      if (!_state.isGameOver && _state.currentPlayer == Piece.white) {
-        _stopClock(); // pause human's clock while AI thinks
-        _aiMove();
-      } else if (!_state.isGameOver) {
-        _startClock(); // still human's turn (no valid AI moves, stayed on black)
-      } else {
-        _stopClock();
-      }
-    } else {
-      if (_state.isGameOver) {
-        _stopClock();
-      }
-      _switchClock();
-    }
+    _handleTurn();
   }
 
   void _switchClock() {
@@ -189,12 +179,30 @@ class _GameScreenState extends State<GameScreen> {
     _startClock(); // tick the new current player's clock
   }
 
+  void _handleTurn() {
+    if (_state.isGameOver) {
+      _stopClock();
+      return;
+    }
+    if (_gameMode == _GameMode.vsAI) {
+      if (_state.currentPlayer != _playerColor) {
+        _stopClock();
+        _aiMove();
+      } else {
+        _startClock();
+      }
+    } else {
+      _switchClock();
+    }
+  }
+
   Future<void> _aiMove() async {
     setState(() => _isAiThinking = true);
 
     await Future.delayed(const Duration(milliseconds: 300));
 
-    final move = _ai.bestMove(_state.board, Piece.white);
+    final aiColor = _playerColor.opponent;
+    final move = _ai.bestMove(_state.board, aiColor);
     if (move != null && mounted) {
       final aiState = _state.makeMove(move[0], move[1]);
       setState(() {
@@ -209,18 +217,22 @@ class _GameScreenState extends State<GameScreen> {
             : AudioService.playWin();
       }
 
-      if (!_state.isGameOver && _state.currentPlayer == Piece.white) {
-        _aiMove();
-      } else if (!_state.isGameOver) {
-        _startClock(); // back to human's turn
-      } else {
-        _stopClock();
-      }
+      _handleTurn();
     } else {
       if (mounted) {
-        setState(() => _isAiThinking = false);
+        setState(() {
+          _isAiThinking = false;
+          _state = GameState(
+            board: _state.board,
+            currentPlayer: _playerColor,
+            validMoves: _state.board.getPotentialMoves(_playerColor),
+            blackScore: _state.blackScore,
+            whiteScore: _state.whiteScore,
+            lastMove: _state.lastMove,
+          );
+        });
         if (!_state.isGameOver) {
-          _startClock(); // back to human's turn
+          _startClock();
         }
       }
     }
@@ -236,6 +248,7 @@ class _GameScreenState extends State<GameScreen> {
       _state = GameState.initial();
       _isAiThinking = false;
     });
+    _handleTurn();
   }
 
   void _cycleDifficulty() {
@@ -248,6 +261,7 @@ class _GameScreenState extends State<GameScreen> {
       _isAiThinking = false;
       _resetTimers();
     });
+    _handleTurn();
   }
 
   void _toggleMode() {
@@ -261,6 +275,18 @@ class _GameScreenState extends State<GameScreen> {
       _isAiThinking = false;
       _resetTimers();
     });
+    _handleTurn();
+  }
+
+  void _toggleColor() {
+    _stopClock();
+    setState(() {
+      _playerColor = _playerColor.opponent;
+      _state = GameState.initial();
+      _isAiThinking = false;
+      _resetTimers();
+    });
+    _handleTurn();
   }
 
   void _reset() {
@@ -270,6 +296,7 @@ class _GameScreenState extends State<GameScreen> {
       _isAiThinking = false;
       _resetTimers();
     });
+    _handleTurn();
   }
 
   void _passTurn() {
@@ -283,17 +310,7 @@ class _GameScreenState extends State<GameScreen> {
       lastMove: _state.lastMove,
     );
     setState(() => _state = newState);
-
-    if (_gameMode == _GameMode.vsAI) {
-      if (_state.currentPlayer == Piece.white) {
-        _stopClock();
-        _aiMove();
-      } else {
-        _startClock();
-      }
-    } else {
-      _switchClock();
-    }
+    _handleTurn();
   }
 
   void _showTutorial() {
@@ -330,6 +347,16 @@ class _GameScreenState extends State<GameScreen> {
               icon: const Icon(Icons.auto_awesome),
               tooltip: 'Difficulty: ${_difficultyLabel(_aiDifficulty)}',
               onPressed: _cycleDifficulty,
+            ),
+          if (_gameMode == _GameMode.vsAI)
+            IconButton(
+              icon: Icon(
+                _playerColor == Piece.black
+                    ? Icons.brightness_2
+                    : Icons.wb_sunny,
+              ),
+              tooltip: 'Play as ${_playerColor == Piece.black ? "Black" : "White"}',
+              onPressed: _toggleColor,
             ),
           IconButton(
             icon: Icon(_gameMode == _GameMode.vsAI

@@ -3,6 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:stratego/widgets/game_screen.dart';
 
+Future<void> pumpThroughAi(WidgetTester tester) async {
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 300));
+  await tester.pump();
+}
+
 void main() {
   group('GameScreen', () {
     testWidgets('renders app bar with Reversi title', (tester) async {
@@ -12,22 +18,23 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
 
       await tester.pumpWidget(const MaterialApp(home: GameScreen()));
-      await tester.pump();
+      await pumpThroughAi(tester);
 
       expect(find.text('Reversi'), findsOneWidget);
     });
 
-    testWidgets('shows initial scores of 2-2', (tester) async {
+    testWidgets('shows scores after AI first move', (tester) async {
       tester.view.physicalSize = const ui.Size(800, 1000);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
 
       await tester.pumpWidget(const MaterialApp(home: GameScreen()));
-      await tester.pump();
+      await pumpThroughAi(tester);
 
-      // Both scores should be displayed
-      expect(find.text('2'), findsAtLeast(2));
+      // AI (black) plays first, flipping one white piece
+      expect(find.text('4'), findsOneWidget);
+      expect(find.text('1'), findsOneWidget);
     });
 
     testWidgets('shows bottom action bar with New Game and Pass', (tester) async {
@@ -37,7 +44,7 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
 
       await tester.pumpWidget(const MaterialApp(home: GameScreen()));
-      await tester.pump();
+      await pumpThroughAi(tester);
 
       expect(find.text('New Game'), findsOneWidget);
       expect(find.text('Pass'), findsOneWidget);
@@ -50,14 +57,15 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
 
       await tester.pumpWidget(const MaterialApp(home: GameScreen()));
-      await tester.pump();
+      await pumpThroughAi(tester);
 
       // Tap New Game button
       await tester.tap(find.text('New Game'));
-      await tester.pump();
+      await pumpThroughAi(tester);
 
-      // Should still be showing scores
-      expect(find.text('2'), findsAtLeast(2));
+      // After reset and AI's first move, scores should be shown
+      expect(find.text('4'), findsOneWidget);
+      expect(find.text('1'), findsOneWidget);
     });
 
     testWidgets('shows timer icon in app bar', (tester) async {
@@ -67,7 +75,7 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
 
       await tester.pumpWidget(const MaterialApp(home: GameScreen()));
-      await tester.pump();
+      await pumpThroughAi(tester);
 
       expect(find.byIcon(Icons.timer_outlined), findsOneWidget);
     });
@@ -79,7 +87,7 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
 
       await tester.pumpWidget(const MaterialApp(home: GameScreen()));
-      await tester.pump();
+      await pumpThroughAi(tester);
 
       expect(find.byIcon(Icons.info_outline), findsOneWidget);
     });
@@ -91,7 +99,7 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
 
       await tester.pumpWidget(const MaterialApp(home: GameScreen()));
-      await tester.pump();
+      await pumpThroughAi(tester);
 
       expect(find.byIcon(Icons.people_outline), findsOneWidget);
     });
@@ -103,7 +111,7 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
 
       await tester.pumpWidget(const MaterialApp(home: GameScreen()));
-      await tester.pump();
+      await pumpThroughAi(tester);
 
       expect(find.byIcon(Icons.auto_awesome), findsOneWidget);
     });
@@ -115,11 +123,11 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
 
       await tester.pumpWidget(const MaterialApp(home: GameScreen()));
-      await tester.pump();
+      await pumpThroughAi(tester);
 
       // Tap timer button to cycle
       await tester.tap(find.byIcon(Icons.timer_outlined));
-      await tester.pump();
+      await pumpThroughAi(tester);
 
       // After cycling once, should be '3 min'
       expect(find.byTooltip('Timer: 3 min'), findsOneWidget);
@@ -132,11 +140,11 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
 
       await tester.pumpWidget(const MaterialApp(home: GameScreen()));
-      await tester.pump();
+      await pumpThroughAi(tester);
 
       // Tap difficulty button to cycle
       await tester.tap(find.byIcon(Icons.auto_awesome));
-      await tester.pump();
+      await pumpThroughAi(tester);
 
       // After cycling from Hard -> Expert
       expect(find.byTooltip('Difficulty: Expert'), findsOneWidget);
@@ -149,7 +157,7 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
 
       await tester.pumpWidget(const MaterialApp(home: GameScreen()));
-      await tester.pump();
+      await pumpThroughAi(tester);
 
       await tester.tap(find.byIcon(Icons.info_outline));
       await tester.pump();
@@ -166,7 +174,7 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
 
       await tester.pumpWidget(const MaterialApp(home: GameScreen()));
-      await tester.pump();
+      await pumpThroughAi(tester);
 
       // Initially vsAI mode -> people icon
       expect(find.byIcon(Icons.people_outline), findsOneWidget);
@@ -186,7 +194,7 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
 
       await tester.pumpWidget(const MaterialApp(home: GameScreen()));
-      await tester.pump();
+      await pumpThroughAi(tester);
 
       expect(find.textContaining('Your turn'), findsOneWidget);
     });
@@ -198,7 +206,7 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
 
       await tester.pumpWidget(const MaterialApp(home: GameScreen()));
-      await tester.pump();
+      await pumpThroughAi(tester);
 
       await tester.tap(find.byIcon(Icons.people_outline));
       await tester.pump();
@@ -213,11 +221,11 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
 
       await tester.pumpWidget(const MaterialApp(home: GameScreen()));
-      await tester.pump();
+      await pumpThroughAi(tester);
 
       // Enable 3 min timer
       await tester.tap(find.byIcon(Icons.timer_outlined));
-      await tester.pump();
+      await pumpThroughAi(tester);
 
       // Should show timer icon in the indicator
       expect(find.byIcon(Icons.timer), findsAtLeast(1));
@@ -230,23 +238,23 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
 
       await tester.pumpWidget(const MaterialApp(home: GameScreen()));
-      await tester.pump();
+      await pumpThroughAi(tester);
 
       await tester.tap(find.byIcon(Icons.timer_outlined));
-      await tester.pump();
+      await pumpThroughAi(tester);
       expect(find.byTooltip('Timer: 3 min'), findsOneWidget);
 
       await tester.tap(find.byIcon(Icons.timer_outlined));
-      await tester.pump();
+      await pumpThroughAi(tester);
       expect(find.byTooltip('Timer: 5 min'), findsOneWidget);
 
       await tester.tap(find.byIcon(Icons.timer_outlined));
-      await tester.pump();
+      await pumpThroughAi(tester);
       expect(find.byTooltip('Timer: 10 min'), findsOneWidget);
 
       // Cycle back to off
       await tester.tap(find.byIcon(Icons.timer_outlined));
-      await tester.pump();
+      await pumpThroughAi(tester);
       expect(find.byTooltip('Timer: Off'), findsOneWidget);
     });
 
@@ -257,22 +265,22 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
 
       await tester.pumpWidget(const MaterialApp(home: GameScreen()));
-      await tester.pump();
+      await pumpThroughAi(tester);
 
       await tester.tap(find.byIcon(Icons.auto_awesome));
-      await tester.pump();
+      await pumpThroughAi(tester);
       expect(find.byTooltip('Difficulty: Expert'), findsOneWidget);
 
       await tester.tap(find.byIcon(Icons.auto_awesome));
-      await tester.pump();
+      await pumpThroughAi(tester);
       expect(find.byTooltip('Difficulty: Easy'), findsOneWidget);
 
       await tester.tap(find.byIcon(Icons.auto_awesome));
-      await tester.pump();
+      await pumpThroughAi(tester);
       expect(find.byTooltip('Difficulty: Medium'), findsOneWidget);
 
       await tester.tap(find.byIcon(Icons.auto_awesome));
-      await tester.pump();
+      await pumpThroughAi(tester);
       expect(find.byTooltip('Difficulty: Hard'), findsOneWidget);
     });
 
@@ -283,7 +291,7 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
 
       await tester.pumpWidget(const MaterialApp(home: GameScreen()));
-      await tester.pump();
+      await pumpThroughAi(tester);
 
       await tester.tap(find.byIcon(Icons.info_outline));
       await tester.pump();
