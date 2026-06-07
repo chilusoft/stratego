@@ -90,6 +90,7 @@ class _GameScreenState extends State<GameScreen> {
     _state = GameState.initial();
     _resetTimers();
     if (_gameMode == _GameMode.vsAI && _state.currentPlayer != _playerColor) {
+      _isAiThinking = true;
       Future.microtask(_aiMove);
     }
   }
