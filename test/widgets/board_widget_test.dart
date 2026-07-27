@@ -1,9 +1,9 @@
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:stratego/game/piece.dart';
-import 'package:stratego/game/game_state.dart';
-import 'package:stratego/widgets/board_widget.dart';
+import 'package:reversi/game/piece.dart';
+import 'package:reversi/game/game_state.dart';
+import 'package:reversi/widgets/board_widget.dart';
 
 void main() {
   group('BoardWidget', () {

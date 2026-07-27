@@ -1,11 +1,11 @@
-# stratego
+# Reversi
 
-[![tests](https://img.shields.io/github/actions/workflow/status/chilusoft/stratego/test.yml?label=tests)](https://github.com/chilusoft/stratego/actions/workflows/test.yml)
-[![coverage](https://img.shields.io/badge/coverage-83.8%25-green)](https://github.com/chilusoft/stratego/actions/workflows/test.yml)
+[![tests](https://img.shields.io/github/actions/workflow/status/chilusoft/reversi/test.yml?label=tests)](https://github.com/chilusoft/reversi/actions/workflows/test.yml)
+[![coverage](https://img.shields.io/badge/coverage-83.8%25-green)](https://github.com/chilusoft/reversi/actions/workflows/test.yml)
 
 A **Reversi (Othello)** game built with Flutter. Play against an AI opponent or with two players on the same device. Features a minimax AI with alpha-beta pruning, a clean dark-themed UI, and a tutorial for new players.
 
-**Play in your browser:** [chilusoft.github.io/stratego](https://chilusoft.github.io/stratego/)
+**Play in your browser:** [chilusoft.github.io/reversi](https://chilusoft.github.io/reversi/)
 
 ## Features
 
@@ -69,11 +69,11 @@ On `linux-arm64`, Flutter looks for these under `.../engine/android-*-release/li
 
 ### Play Online
 
-Play in your browser at **[chilusoft.github.io/stratego](https://chilusoft.github.io/stratego/)** — no installation required.
+Play in your browser at **[chilusoft.github.io/reversi](https://chilusoft.github.io/reversi/)** — no installation required.
 
 ### Installing the APK
 
-Download from [GitHub Releases](https://github.com/chilusoft/stratego/releases) and install:
+Download from [GitHub Releases](https://github.com/chilusoft/reversi/releases) and install:
 
 ```bash
 adb install app-release.apk

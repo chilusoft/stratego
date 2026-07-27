@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:stratego/game/piece.dart';
-import 'package:stratego/game/game_state.dart';
+import 'package:reversi/game/piece.dart';
+import 'package:reversi/game/game_state.dart';
 
 void main() {
   group('GameState constructor', () {

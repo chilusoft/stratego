@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:stratego/game/piece.dart';
+import 'package:reversi/game/piece.dart';
 
 void main() {
   group('Piece enum', () {

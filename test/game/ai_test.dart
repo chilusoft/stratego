@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:stratego/game/piece.dart';
-import 'package:stratego/game/board.dart';
-import 'package:stratego/game/ai.dart';
+import 'package:reversi/game/piece.dart';
+import 'package:reversi/game/board.dart';
+import 'package:reversi/game/ai.dart';
 
 void main() {
   group('AiPlayer constructor', () {

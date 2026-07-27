@@ -1,2 +1,2 @@
-app_identifier("dev.chilusoft.stratego")
+app_identifier("dev.chilusoft.reversi")
 apple_id(ENV["APP_STORE_CONNECT_USERNAME"])

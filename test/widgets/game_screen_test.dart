@@ -1,7 +1,7 @@
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:stratego/widgets/game_screen.dart';
+import 'package:reversi/widgets/game_screen.dart';
 
 Future<void> pumpThroughAi(WidgetTester tester) async {
   await tester.pump();

@@ -1,6 +1,6 @@
 import 'dart:ui' as ui;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:stratego/main.dart';
+import 'package:reversi/main.dart';
 
 Future<void> pumpThroughAi(WidgetTester tester) async {
   await tester.pump();

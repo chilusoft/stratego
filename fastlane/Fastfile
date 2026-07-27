@@ -10,7 +10,7 @@ platform :ios do
 
     match(
       type: "appstore",
-      app_identifier: "dev.chilusoft.stratego",
+      app_identifier: "dev.chilusoft.reversi",
       api_key: api_key,
       readonly: !options[:first_run]
     )
