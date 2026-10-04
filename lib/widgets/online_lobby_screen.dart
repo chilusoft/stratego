@@ -1,5 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:html' as html;
+import 'dart:js' as js;
 import 'package:flutter/material.dart';
+import '../auth/google_auth.dart';
 import '../net/api_client.dart';
 import '../net/game_socket.dart';
 import 'online_game_screen.dart';
@@ -13,20 +17,20 @@ class OnlineLobbyScreen extends StatefulWidget {
 }
 
 class _OnlineLobbyScreenState extends State<OnlineLobbyScreen> {
-  final _nameCtl = TextEditingController(text: 'player');
   final _api = ApiClient();
   GameSocket? _socket;
   StreamSubscription? _sub;
   List<Map<String, dynamic>> _openRooms = [];
-  String _status = 'Enter a name, then create, queue, or join.';
+  String _status = 'Sign in with Google to play online.';
   String? _playerId;
+  String? _accountName;
+  bool _authed = false;
   bool _opened = false;
 
   @override
   void dispose() {
     _sub?.cancel();
     _socket?.close();
-    _nameCtl.dispose();
     super.dispose();
   }
 
@@ -45,26 +49,38 @@ class _OnlineLobbyScreenState extends State<OnlineLobbyScreen> {
           setState(() => _status = 'Room ${msg['roomId']} created — waiting for opponent');
           break;
         case 'matched':
+          // Don't open the screen here — the server immediately follows with
+          // a 'state' message, and opening on that guarantees the screen gets
+          // the room snapshot instead of racing it.
           _playerId = msg['playerId'] as String?;
-          _openGame(msg['playerId'] as String? ?? '', s);
           break;
         case 'queued':
           setState(() => _status = 'Queued — waiting for a match...');
+          break;
+        case 'joined':
+          _playerId = msg['playerId'] as String?;
+          break;
+        case 'authed':
+          setState(() {
+            _authed = true;
+            _accountName = msg['name'] as String?;
+            _status = 'Signed in as ${msg['name']}';
+          });
           break;
         case 'state':
           final room = msg['room'] as Map<String, dynamic>?;
           if (room != null && room['status'] == 'active' && !_opened) {
             String? pid = _playerId;
-            if (pid == null) {
+            if (pid == null && _accountName != null) {
               final players = (room['players'] as List?) ?? [];
               for (final p in players) {
-                if (p['name'] == _nameCtl.text) pid = p['id'] as String?;
+                if (p['name'] == _accountName) pid = p['id'] as String?;
               }
             }
             if (pid != null) {
               _opened = true;
               _playerId = pid;
-              _openGame(pid, s);
+              _openGame(pid, s, initialRoom: room);
             }
           }
           break;
@@ -77,7 +93,7 @@ class _OnlineLobbyScreenState extends State<OnlineLobbyScreen> {
     _refresh();
   }
 
-  void _openGame(String playerId, GameSocket s) {
+  void _openGame(String playerId, GameSocket s, {Map<String, dynamic>? initialRoom}) {
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -85,9 +101,45 @@ class _OnlineLobbyScreenState extends State<OnlineLobbyScreen> {
           socket: s,
           playerId: playerId,
           opponentName: '',
+          initialRoom: initialRoom,
         ),
       ),
     );
+  }
+
+  Future<void> _signIn() async {
+    setState(() => _status = 'Signing in...');
+    final token = await GoogleAuth.signIn();
+    if (token == null) {
+      setState(() => _status = 'Sign-in failed or cancelled.');
+      return;
+    }
+    final loc = await _getLocation();
+    final payload = <String, dynamic>{'type': 'auth', 'token': token};
+    if (loc != null) {
+      payload['lat'] = loc['lat'];
+      payload['lon'] = loc['lon'];
+    }
+    _connect((s) => s.send(payload));
+  }
+
+  Future<Map<String, double>?> _getLocation() async {
+    try {
+      html.window.localStorage.remove('gid_geo');
+      js.context.callMethod('__geo_js');
+      final deadline = DateTime.now().add(const Duration(seconds: 10));
+      String? raw;
+      while (DateTime.now().isBefore(deadline)) {
+        await Future.delayed(const Duration(milliseconds: 300));
+        raw = html.window.localStorage['gid_geo'];
+        if (raw != null) break;
+      }
+      if (raw == null || raw.isEmpty) return null;
+      final map = jsonDecode(raw) as Map<String, dynamic>;
+      return {'lat': (map['lat'] as num).toDouble(), 'lon': (map['lon'] as num).toDouble()};
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<void> _refresh() async {
@@ -114,38 +166,49 @@ class _OnlineLobbyScreenState extends State<OnlineLobbyScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            TextField(
-              controller: _nameCtl,
-              style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(
-                labelText: 'Your name',
-                labelStyle: TextStyle(color: Colors.white54),
+            if (_authed)
+              Text(
+                'Signed in as ${_accountName ?? 'player'}',
+                style: const TextStyle(color: Colors.white70),
+              )
+            else
+              ElevatedButton.icon(
+                onPressed: _signIn,
+                icon: const Icon(Icons.login),
+                label: const Text('Sign in with Google'),
               ),
-            ),
             const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => _connect((s) => s.send({
-                          'type': 'create_room',
-                          'name': _nameCtl.text,
-                        })),
-                    child: const Text('Create room'),
-                  ),
+            AbsorbPointer(
+              absorbing: !_authed,
+              child: Opacity(
+                opacity: _authed ? 1.0 : 0.4,
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () => _connect((s) => s.send({
+                                  'type': 'create_room',
+                                })),
+                            child: const Text('Create room'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () => _connect((s) => s.send({
+                                  'type': 'queue_join',
+                                  'mode': 'reversi',
+                                })),
+                            child: const Text('Random match'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => _connect((s) => s.send({
-                          'type': 'queue_join',
-                          'name': _nameCtl.text,
-                          'mode': 'reversi',
-                        })),
-                    child: const Text('Random match'),
-                  ),
-                ),
-              ],
+              ),
             ),
             const SizedBox(height: 12),
             Text(_status, style: const TextStyle(color: Colors.white54)),
@@ -177,7 +240,6 @@ class _OnlineLobbyScreenState extends State<OnlineLobbyScreen> {
                         onPressed: () => _connect((s) => s.send({
                               'type': 'join_room',
                               'roomId': r['id'],
-                              'name': _nameCtl.text,
                             })),
                         child: const Text('Join'),
                       ),

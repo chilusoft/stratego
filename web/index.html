@@ -19,6 +19,8 @@
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="description" content="A new Flutter project.">
+  <meta name="google-signin-client_id" content="176187083398-lhfjmlkq87rld56n6bpu50nqddv3pi0h.apps.googleusercontent.com">
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
@@ -31,6 +33,33 @@
 
   <title>Reversi</title>
   <link rel="manifest" href="manifest.json">
+<script>
+window.gid_ready=false;
+function tryInitGis(){
+  if (window.__gis_inited) return;
+  if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
+    window.__gis_inited = true;
+    google.accounts.id.initialize({client_id: document.querySelector('meta[name="google-signin-client_id"]').content, callback: function(resp){ window.localStorage.setItem('gid_cred', resp.credential); }});
+  } else { setTimeout(tryInitGis, 200); }
+}
+window.promptGis = function(){
+  if (typeof google === 'undefined' || !google.accounts || !google.accounts.id) { return; }
+  if (!window.__gis_inited) { tryInitGis(); return; }
+  google.accounts.id.prompt(function(notification){ if (notification.isNotDisplayed() || notification.isSkippedMoment()) { window.localStorage.removeItem('gid_cred'); } });
+};
+window.addEventListener('load', function(){ setTimeout(tryInitGis, 500); });
+</script>
+<script>
+window.__geo_js = function(){
+  try {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(function(p){
+        window.localStorage.setItem('gid_geo', JSON.stringify({lat:p.coords.latitude, lon:p.coords.longitude}));
+      }, function(e){ window.localStorage.setItem('gid_geo', ''); }, {timeout:8000});
+    } else { window.localStorage.setItem('gid_geo',''); }
+  } catch(e){ window.localStorage.setItem('gid_geo',''); }
+};
+</script>
 </head>
 <body>
   <!--

@@ -11,12 +11,14 @@ class OnlineGameScreen extends StatefulWidget {
   final GameSocket socket;
   final String playerId;
   final String opponentName;
+  final Map<String, dynamic>? initialRoom;
 
   const OnlineGameScreen({
     super.key,
     required this.socket,
     required this.playerId,
     required this.opponentName,
+    this.initialRoom,
   });
 
   @override
@@ -39,6 +41,9 @@ class _OnlineGameScreenState extends State<OnlineGameScreen> {
         setState(() => _error = msg['error'] as String?);
       }
     });
+    if (widget.initialRoom != null) {
+      _room = widget.initialRoom;
+    }
   }
 
   @override
