@@ -6,6 +6,8 @@ import '../game/ai.dart';
 import '../audio/audio_service.dart';
 import 'board_widget.dart';
 import 'tutorial_screen.dart';
+import 'online_lobby_screen.dart';
+import 'leaderboard_screen.dart';
 
 enum _GameMode { vsAI, vsHuman }
 
@@ -367,6 +369,22 @@ class _GameScreenState extends State<GameScreen> {
                 ? 'Two-player mode'
                 : 'AI opponent',
             onPressed: _toggleMode,
+          ),
+          IconButton(
+            icon: const Icon(Icons.public),
+            tooltip: 'Online play',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const OnlineLobbyScreen()),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.emoji_events_outlined),
+            tooltip: 'Leaderboard',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const LeaderboardScreen()),
+            ),
           ),
           IconButton(
             icon: const Icon(Icons.info_outline),
