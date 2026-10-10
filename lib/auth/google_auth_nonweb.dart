@@ -4,7 +4,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 class GoogleAuth {
   static final GoogleSignIn _googleSignIn = GoogleSignIn(
     serverClientId:
-        '176187083398-lhfjmlkq87rld56n6bpu50nqddv3pi0h.apps.googleusercontent.com',
+        '993805509680-m8l2lrl9as7tgi1ftvfqkpcjq75mpumr.apps.googleusercontent.com',
   );
 
   static Future<String?> signIn() async {
